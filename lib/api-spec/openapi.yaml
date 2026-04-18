@@ -1,22 +1,26 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Wedding Invitation API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: guests
+    description: Guest management
+  - name: settings
+    description: Wedding settings
+  - name: rsvp
+    description: RSVP operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +28,280 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /guests:
+    get:
+      operationId: listGuests
+      tags: [guests]
+      summary: List all guests
+      responses:
+        "200":
+          description: List of guests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Guest"
+    post:
+      operationId: createGuest
+      tags: [guests]
+      summary: Create a guest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGuestBody"
+      responses:
+        "201":
+          description: Created guest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /guests/{id}:
+    get:
+      operationId: getGuest
+      tags: [guests]
+      summary: Get a guest by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Guest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateGuest
+      tags: [guests]
+      summary: Update a guest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGuestBody"
+      responses:
+        "200":
+          description: Updated guest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteGuest
+      tags: [guests]
+      summary: Delete a guest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /guests/slug/{slug}:
+    get:
+      operationId: getGuestBySlug
+      tags: [guests]
+      summary: Get a guest by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Guest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /guests/{id}/open-invitation:
+    post:
+      operationId: markInvitationOpened
+      tags: [guests]
+      summary: Mark invitation as opened
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+
+  /guests/{id}/complete-game:
+    post:
+      operationId: markGameCompleted
+      tags: [guests]
+      summary: Mark game as completed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+
+  /guests/{id}/rsvp:
+    post:
+      operationId: submitRsvp
+      tags: [rsvp]
+      summary: Submit RSVP for guest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RsvpBody"
+      responses:
+        "200":
+          description: Updated guest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get wedding settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update wedding settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /guests/stats:
+    get:
+      operationId: getGuestStats
+      tags: [guests]
+      summary: Get guest statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStats"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [guests]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +312,247 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Guest:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        salutationType:
+          type: string
+          enum: [Дорогой, Дорогая, Дорогие]
+        guestsCount:
+          type: integer
+        slug:
+          type: string
+        invitationOpened:
+          type: boolean
+        gameCompleted:
+          type: boolean
+        rsvpStatus:
+          type: string
+          enum: [pending, attending, not_attending]
+        rsvpComment:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - firstName
+        - lastName
+        - salutationType
+        - guestsCount
+        - slug
+        - invitationOpened
+        - gameCompleted
+        - rsvpStatus
+        - rsvpComment
+        - createdAt
+        - updatedAt
+
+    CreateGuestBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        salutationType:
+          type: string
+          enum: [Дорогой, Дорогая, Дорогие]
+        guestsCount:
+          type: integer
+          default: 1
+        slug:
+          type: ["string", "null"]
+      required:
+        - firstName
+        - lastName
+        - salutationType
+
+    UpdateGuestBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        salutationType:
+          type: string
+          enum: [Дорогой, Дорогая, Дорогие]
+        guestsCount:
+          type: integer
+        slug:
+          type: string
+        rsvpStatus:
+          type: string
+          enum: [pending, attending, not_attending]
+        rsvpComment:
+          type: ["string", "null"]
+
+    RsvpBody:
+      type: object
+      properties:
+        rsvpStatus:
+          type: string
+          enum: [attending, not_attending]
+        rsvpComment:
+          type: ["string", "null"]
+      required:
+        - rsvpStatus
+
+    Settings:
+      type: object
+      properties:
+        id:
+          type: integer
+        weddingTitle:
+          type: string
+        brideName:
+          type: string
+        groomName:
+          type: string
+        weddingDate:
+          type: string
+        weddingTime:
+          type: string
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        venueLat:
+          type: number
+        venueLng:
+          type: number
+        mapLink:
+          type: ["string", "null"]
+        invitationText:
+          type: string
+        dressCode:
+          type: ["string", "null"]
+        contacts:
+          type: ["string", "null"]
+        adminPassword:
+          type: string
+        gameEnabled:
+          type: boolean
+        countdownEnabled:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - weddingTitle
+        - brideName
+        - groomName
+        - weddingDate
+        - weddingTime
+        - venueName
+        - venueAddress
+        - venueLat
+        - venueLng
+        - mapLink
+        - invitationText
+        - dressCode
+        - contacts
+        - adminPassword
+        - gameEnabled
+        - countdownEnabled
+        - updatedAt
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        weddingTitle:
+          type: string
+        brideName:
+          type: string
+        groomName:
+          type: string
+        weddingDate:
+          type: string
+        weddingTime:
+          type: string
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        venueLat:
+          type: number
+        venueLng:
+          type: number
+        mapLink:
+          type: ["string", "null"]
+        invitationText:
+          type: string
+        dressCode:
+          type: ["string", "null"]
+        contacts:
+          type: ["string", "null"]
+        adminPassword:
+          type: string
+        gameEnabled:
+          type: boolean
+        countdownEnabled:
+          type: boolean
+
+    GuestStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        attending:
+          type: integer
+        notAttending:
+          type: integer
+        pending:
+          type: integer
+        gameCompleted:
+          type: integer
+        invitationOpened:
+          type: integer
+        totalPersons:
+          type: integer
+      required:
+        - total
+        - attending
+        - notAttending
+        - pending
+        - gameCompleted
+        - invitationOpened
+        - totalPersons
+
+    AdminLoginBody:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+
+    AdminLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        token:
+          type: string
+      required:
+        - success
+        - token
