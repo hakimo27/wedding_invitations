@@ -1,326 +1,338 @@
-# Deployment Guide — Wedding Invitation App
+# Развёртывание: Свадебные приглашения
 
-Production deployment on a regular VPS / dedicated server.
-
----
-
-## Requirements
-
-- **OS**: Ubuntu 22.04+ / Debian 12+ (or any modern Linux)
-- **Node.js**: 20 LTS or 22 LTS (`node --version`)
-- **pnpm**: 9+ (`npm i -g pnpm`)
-- **PostgreSQL**: 15+ (local or remote)
-- **Nginx**: for reverse proxy and SSL
-- **PM2**: `npm i -g pm2`
-- **Certbot**: for free SSL via Let's Encrypt
+Полная инструкция по запуску на VPS/сервере.
 
 ---
 
-## Option A — VPS deployment (without Docker)
+## Требования к серверу
 
-### Step 1 — Upload the project to your server
-
-```bash
-# On your server, create app directory
-mkdir -p /var/www/wedding
-cd /var/www/wedding
-
-# Option 1: clone from Git
-git clone https://YOUR_REPO_URL .
-
-# Option 2: extract from archive
-# tar -xzf wedding-app.tar.gz
-```
-
-### Step 2 — Install Node.js and pnpm
-
-```bash
-# Install Node.js 22 via nvm (recommended)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-source ~/.bashrc
-nvm install 22
-nvm use 22
-
-# Install pnpm
-npm i -g pnpm pm2
-```
-
-### Step 3 — Configure PostgreSQL
-
-```bash
-sudo apt install postgresql postgresql-contrib -y
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-
-sudo -u postgres psql -c "CREATE USER wedding_user WITH PASSWORD 'strongpassword';"
-sudo -u postgres psql -c "CREATE DATABASE wedding_db OWNER wedding_user;"
-```
-
-### Step 4 — Set up environment variables
-
-```bash
-cd /var/www/wedding
-cp .env.example .env
-nano .env
-```
-
-Fill in your values:
-
-```env
-NODE_ENV=production
-PORT=3000
-APP_BASE_URL=https://wedding.yourdomain.com
-DATABASE_URL=postgresql://wedding_user:strongpassword@localhost:5432/wedding_db
-ADMIN_PASSWORD=your_strong_admin_password
-CORS_ORIGIN=https://wedding.yourdomain.com
-```
-
-### Step 5 — Install dependencies
-
-```bash
-pnpm install --frozen-lockfile
-```
-
-### Step 6 — Run database migrations
-
-```bash
-# This creates all tables automatically (safe to run multiple times)
-DATABASE_URL="postgresql://wedding_user:strongpassword@localhost:5432/wedding_db" pnpm db:push
-```
-
-Or source your .env first:
-
-```bash
-export $(grep -v '^#' .env | xargs)
-pnpm db:push
-```
-
-### Step 7 — Build the project
-
-```bash
-pnpm build:prod
-```
-
-This creates:
-```
-dist/
-├── server/    — Node.js bundle
-└── public/    — Frontend static files
-```
-
-### Step 8 — Start with PM2
-
-```bash
-# Source .env so PM2 has all variables
-export $(grep -v '^#' .env | xargs)
-
-# Start the app
-pm2 start ecosystem.config.cjs --env production
-
-# Save PM2 process list
-pm2 save
-
-# Auto-start PM2 on server reboot
-pm2 startup
-# Follow the printed command (usually: sudo env PATH=... pm2 startup systemd ...)
-```
-
-Useful PM2 commands:
-```bash
-pm2 status          # check status
-pm2 logs wedding-invite   # view logs
-pm2 restart wedding-invite
-pm2 stop wedding-invite
-```
-
-### Step 9 — Configure Nginx
-
-```bash
-sudo apt install nginx -y
-
-# Copy the example config
-sudo cp /var/www/wedding/deploy/nginx.conf /etc/nginx/sites-available/wedding
-
-# Edit it — replace YOUR_DOMAIN with your real domain
-sudo nano /etc/nginx/sites-available/wedding
-
-# Enable the site
-sudo ln -s /etc/nginx/sites-available/wedding /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Step 10 — Enable SSL with Certbot
-
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-
-# Issue certificate (replace with your domain and email)
-sudo certbot --nginx -d wedding.yourdomain.com -d www.wedding.yourdomain.com \
-  --email your@email.com --agree-tos --non-interactive
-
-# Certbot auto-renews. Verify the renewal timer:
-sudo systemctl status certbot.timer
-```
+| Компонент  | Минимум       |
+|------------|---------------|
+| OS         | Ubuntu 22.04+ / Debian 12+ |
+| CPU        | 1 ядро        |
+| RAM        | 1 GB          |
+| Диск       | 10 GB         |
+| Docker     | 24+           |
+| Домен      | Должен указывать на IP сервера |
 
 ---
 
-## Option B — Docker deployment
+## Вариант 1 — Docker (рекомендуется)
 
-### Step 1 — Install Docker
+Самый простой способ. Нужен только Docker.
+
+### Шаг 1 — Установить Docker
 
 ```bash
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
+newgrp docker
 ```
 
-### Step 2 — Configure environment
+### Шаг 2 — Скачать проект
+
+```bash
+git clone https://github.com/hakimo27/wedding_invitations.git
+cd wedding_invitations
+```
+
+### Шаг 3 — Настроить переменные окружения
 
 ```bash
 cp .env.example .env
 nano .env
-# Set DB_PASSWORD (used by docker-compose), APP_BASE_URL, ADMIN_PASSWORD, etc.
 ```
 
-### Step 3 — Build and start
+Заполните обязательные поля:
+
+```env
+APP_BASE_URL=https://wedding.ваш-домен.ru
+DOMAIN=wedding.ваш-домен.ru
+ADMIN_PASSWORD=придумайте_надёжный_пароль
+DB_PASSWORD=пароль_базы_данных
+SSL_EMAIL=ваш@email.ru
+```
+
+### Шаг 4 — Получить SSL-сертификат (один раз)
+
+Перед первым запуском нужно получить сертификат Let's Encrypt.
+
+```bash
+# Сделать скрипт исполняемым
+chmod +x deploy/init-ssl.sh
+
+# Запустить (замените на свой домен и email)
+./deploy/init-ssl.sh wedding.ваш-домен.ru ваш@email.ru
+```
+
+Скрипт автоматически:
+- запустит временный HTTP-сервер
+- получит SSL-сертификат от Let's Encrypt
+- сохранит сертификат
+
+### Шаг 5 — Указать домен в nginx-конфиге
+
+```bash
+# Замените YOUR_DOMAIN на ваш реальный домен в двух местах
+sed -i 's/YOUR_DOMAIN/wedding.ваш-домен.ru/g' deploy/nginx-docker.conf
+```
+
+Или откройте `deploy/nginx-docker.conf` вручную и замените все `YOUR_DOMAIN`.
+
+### Шаг 6 — Запустить всё
 
 ```bash
 docker compose up -d --build
 ```
 
-### Step 4 — Run database migrations
+Это запустит три контейнера:
+- **db** — PostgreSQL база данных
+- **app** — Node.js сервер приглашений
+- **nginx** — веб-сервер с SSL
+
+### Шаг 7 — Инициализировать базу данных
 
 ```bash
 docker compose exec app sh -c "DATABASE_URL=\$DATABASE_URL pnpm db:push"
 ```
 
-### Step 5 — Configure Nginx and SSL
+### Готово!
 
-Same as Option A, Steps 9–10, but proxy to port 3000 on the host:
+Откройте `https://wedding.ваш-домен.ru/admin` в браузере и войдите с вашим паролем.
 
-```nginx
-location /api/ {
-    proxy_pass http://127.0.0.1:3000;
-    ...
-}
-```
+---
 
-### Docker commands
+## Полезные команды Docker
 
 ```bash
-docker compose up -d          # start (detached)
-docker compose down           # stop and remove containers
-docker compose logs -f app    # view app logs
-docker compose restart app    # restart app container
-docker compose pull && docker compose up -d --build   # update
+# Статус контейнеров
+docker compose ps
+
+# Логи приложения
+docker compose logs -f app
+
+# Логи nginx
+docker compose logs -f nginx
+
+# Перезапустить приложение (например, после обновления)
+docker compose restart app
+
+# Остановить всё
+docker compose down
+
+# Остановить и удалить данные БД (осторожно!)
+docker compose down -v
 ```
 
 ---
 
-## Updating the project
+## Обновление проекта
 
 ```bash
-cd /var/www/wedding
+cd wedding_invitations
 
-# Pull latest code
+# Загрузить новую версию
 git pull
 
-# Install any new dependencies
-pnpm install --frozen-lockfile
+# Пересобрать и перезапустить
+docker compose up -d --build
 
-# Re-run migrations if schema changed
-export $(grep -v '^#' .env | xargs) && pnpm db:push
-
-# Rebuild
-pnpm build:prod
-
-# Restart
-pm2 restart wedding-invite
+# Применить изменения в схеме БД (если были)
+docker compose exec app sh -c "DATABASE_URL=\$DATABASE_URL pnpm db:push"
 ```
 
 ---
 
-## Database backup
+## Продление SSL-сертификата
+
+Сертификаты Let's Encrypt действуют 90 дней. Продление:
 
 ```bash
-# Manual backup
-pg_dump -U wedding_user -h localhost wedding_db > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose --profile certbot run --rm certbot
 
-# Restore from backup
-psql -U wedding_user -h localhost wedding_db < backup_20260101_120000.sql
+# Перезагрузить nginx для применения нового сертификата
+docker compose exec nginx nginx -s reload
 ```
 
-Automate with cron:
+Добавьте в cron для автоматического продления (раз в 2 месяца):
+
 ```bash
 crontab -e
-# Add: daily backup at 3am, keep 30 days
-0 3 * * * pg_dump -U wedding_user -h localhost wedding_db | gzip > /backups/wedding_$(date +\%Y\%m\%d).sql.gz && find /backups -name 'wedding_*.sql.gz' -mtime +30 -delete
+# Добавьте строку:
+0 3 1 */2 * cd /путь/к/wedding_invitations && docker compose --profile certbot run --rm certbot && docker compose exec nginx nginx -s reload
 ```
 
 ---
 
-## Nginx config overview
+## Резервное копирование базы данных
 
-See `deploy/nginx.conf` for the full example. It includes:
-- HTTP → HTTPS redirect
-- SSL via Certbot (or your own certificates)
-- Static frontend files served directly by Nginx (fast)
-- `/api/` routes proxied to Node.js on port 3000
-- SPA fallback for client-side routing (`/invite/:slug`, `/admin`, etc.)
+```bash
+# Создать бэкап
+docker compose exec db pg_dump -U wedding_user wedding_db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Восстановить из бэкапа
+cat backup_20260101_120000.sql | docker compose exec -T db psql -U wedding_user wedding_db
+```
+
+Автоматический ежедневный бэкап через cron:
+
+```bash
+crontab -e
+# Каждый день в 4:00, хранить 30 дней:
+0 4 * * * cd /путь/к/wedding_invitations && docker compose exec -T db pg_dump -U wedding_user wedding_db | gzip > /backups/wedding_$(date +\%Y\%m\%d).sql.gz && find /backups -name 'wedding_*.sql.gz' -mtime +30 -delete
+```
 
 ---
 
-## Project structure after build
+## Вариант 2 — VPS без Docker (PM2 + nginx)
+
+Если Docker недоступен или нежелателен.
+
+### Установить Node.js и зависимости
+
+```bash
+# Node.js 22 через nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+source ~/.bashrc
+nvm install 22
+nvm use 22
+
+# Менеджеры пакетов и процессов
+npm i -g pnpm pm2
+```
+
+### Установить и настроить PostgreSQL
+
+```bash
+sudo apt install postgresql postgresql-contrib -y
+sudo systemctl enable --now postgresql
+
+sudo -u postgres psql -c "CREATE USER wedding_user WITH PASSWORD 'надёжный_пароль';"
+sudo -u postgres psql -c "CREATE DATABASE wedding_db OWNER wedding_user;"
+```
+
+### Установить Nginx
+
+```bash
+sudo apt install nginx certbot python3-certbot-nginx -y
+
+# Скопировать конфиг
+sudo cp deploy/nginx.conf /etc/nginx/sites-available/wedding
+# Заменить YOUR_DOMAIN на реальный домен
+sudo sed -i 's/YOUR_DOMAIN/wedding.ваш-домен.ru/g' /etc/nginx/sites-available/wedding
+sudo ln -s /etc/nginx/sites-available/wedding /etc/nginx/sites-enabled/
+
+# Проверить и применить
+sudo nginx -t && sudo systemctl reload nginx
+
+# SSL через Certbot
+sudo certbot --nginx -d wedding.ваш-домен.ru --email ваш@email.ru --agree-tos -n
+```
+
+### Настроить и запустить приложение
+
+```bash
+cd /var/www/wedding_invitations
+
+cp .env.example .env
+nano .env   # заполнить DATABASE_URL, ADMIN_PASSWORD, APP_BASE_URL
+
+# Установить зависимости
+pnpm install --frozen-lockfile
+
+# Инициализировать БД
+export $(grep -v '^#' .env | xargs)
+pnpm db:push
+
+# Собрать production-сборку
+pnpm build:prod
+
+# Запустить через PM2
+pm2 start ecosystem.config.cjs --env production
+pm2 save
+pm2 startup   # выполнить выведенную команду для автостарта
+```
+
+### Полезные команды PM2
+
+```bash
+pm2 status                    # статус процессов
+pm2 logs wedding-invite       # логи приложения
+pm2 restart wedding-invite    # перезапуск
+pm2 stop wedding-invite       # остановить
+```
+
+---
+
+## Переменные окружения
+
+| Переменная       | Обязательна | Описание                                       |
+|------------------|-------------|------------------------------------------------|
+| `NODE_ENV`       | да          | Всегда `production`                            |
+| `PORT`           | да          | Порт Node.js (обычно `3000`)                  |
+| `APP_BASE_URL`   | да          | Полный URL сайта, напр. `https://wedding.ru`  |
+| `DOMAIN`         | да (Docker) | Домен без `https://`                          |
+| `DATABASE_URL`   | да          | Строка подключения к PostgreSQL               |
+| `DB_PASSWORD`    | да (Docker) | Пароль БД (используется в docker-compose)    |
+| `ADMIN_PASSWORD` | да          | Пароль для входа в `/admin`                  |
+| `SSL_EMAIL`      | да          | Email для SSL-уведомлений Let's Encrypt       |
+| `CORS_ORIGIN`    | нет         | Разрешённый CORS-источник (рекомендуется)    |
+
+---
+
+## Структура проекта после сборки
 
 ```
 dist/
 ├── server/
-│   ├── index.mjs           — Main server entry point
-│   └── pino-worker.mjs     — Logging worker
+│   ├── index.mjs           — главный сервер
+│   └── pino-worker.mjs     — логирование
 └── public/
-    ├── index.html          — SPA entry point
-    └── assets/             — JS, CSS, fonts (hashed filenames)
+    ├── index.html          — точка входа SPA
+    └── assets/             — JS, CSS, шрифты (хешированные имена)
 ```
 
 ---
 
-## Environment variables reference
+## Маршруты приложения
 
-| Variable        | Required | Description                                      |
-|-----------------|----------|--------------------------------------------------|
-| `NODE_ENV`      | yes      | Must be `production`                             |
-| `PORT`          | yes      | Port for Node.js server (default: 3000)          |
-| `APP_BASE_URL`  | yes      | Public URL e.g. `https://wedding.example.com`    |
-| `DATABASE_URL`  | yes      | PostgreSQL connection string                     |
-| `ADMIN_PASSWORD`| yes      | Password for the admin panel                     |
-| `CORS_ORIGIN`   | no       | Allowed CORS origin (defaults to allow all)      |
-| `SSL_EMAIL`     | no       | Email for Certbot SSL certificate                |
+| Адрес                         | Описание                          |
+|-------------------------------|-----------------------------------|
+| `/admin`                      | Панель администратора             |
+| `/admin/login`                | Вход в панель                     |
+| `/invite/:slug`               | Персональное приглашение гостя    |
+| `/preview/template/default`   | Предпросмотр: классический шаблон |
+| `/preview/template/classic`   | Предпросмотр: элегантный шаблон   |
+| `/preview/template/floral`    | Предпросмотр: цветочный шаблон    |
+| `/api/healthz`                | Проверка работоспособности API    |
 
 ---
 
-## Troubleshooting
+## Решение проблем
 
-**App not starting?**
+**Приложение не стартует?**
 ```bash
-pm2 logs wedding-invite --lines 50
+docker compose logs app --tail 50
 ```
 
-**502 Bad Gateway in Nginx?**
+**Nginx 502 Bad Gateway?**
 ```bash
-# Check if Node.js is running
-pm2 status
-curl http://localhost:3000/api/health
+# Проверить, запущен ли контейнер app
+docker compose ps
+curl http://app:3000/api/healthz   # внутри сети docker
 ```
 
-**Database connection error?**
+**Ошибка подключения к БД?**
 ```bash
-# Verify DATABASE_URL
-psql "$DATABASE_URL" -c "SELECT 1"
+docker compose logs db --tail 20
+# Проверить переменную DB_PASSWORD в .env
 ```
 
-**Need to reset admin password?**
+**SSL-сертификат не получен?**
 ```bash
-# Update directly in the DB
-psql "$DATABASE_URL" -c "UPDATE settings SET admin_password_hash = 'new_hash' WHERE id = 1;"
-# Or re-run the app with a new ADMIN_PASSWORD and it will update on next login
+# Убедитесь что домен указывает на IP сервера:
+dig wedding.ваш-домен.ru
+
+# Порт 80 должен быть открыт:
+sudo ufw allow 80 && sudo ufw allow 443
 ```
