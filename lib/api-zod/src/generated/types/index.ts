@@ -3,17 +3,19 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 
 export * from "./activityLog";
 export * from "./adminLoginBody";
 export * from "./adminLoginResponse";
 export * from "./createGuestBody";
+export * from "./createGuestBodyCoupleDisplayMode";
 export * from "./createGuestBodySalutationType";
 export * from "./createTableBody";
 export * from "./errorResponse";
 export * from "./guest";
+export * from "./guestCoupleDisplayMode";
 export * from "./guestRsvpStatus";
 export * from "./guestSalutationType";
 export * from "./guestStats";
@@ -21,9 +23,12 @@ export * from "./healthStatus";
 export * from "./rsvpBody";
 export * from "./rsvpBodyRsvpStatus";
 export * from "./settings";
+export * from "./settingsActiveTemplate";
 export * from "./updateGuestBody";
+export * from "./updateGuestBodyCoupleDisplayMode";
 export * from "./updateGuestBodyRsvpStatus";
 export * from "./updateGuestBodySalutationType";
 export * from "./updateSettingsBody";
+export * from "./updateSettingsBodyActiveTemplate";
 export * from "./updateTableBody";
 export * from "./weddingTable";

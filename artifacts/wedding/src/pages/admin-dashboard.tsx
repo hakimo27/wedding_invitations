@@ -45,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   LogOut, Copy, ExternalLink, Trash2, Plus, Users, CheckCircle,
   Clock, Gamepad2, Search, Edit, Mail, MessageSquare, Eye,
-  XCircle, Activity, Table2, LayoutDashboard,
+  XCircle, Activity, Table2, LayoutDashboard, Share2, Palette,
 } from "lucide-react";
 import { FloatingPetals } from "@/components/FloatingPetals";
 
@@ -297,6 +297,7 @@ export default function AdminDashboard() {
                       onCopyMessage={() => handleCopyMessage(guest)}
                       onTelegram={() => handleTelegram(guest.slug)}
                       onOpen={() => window.open(getInviteUrl(guest.slug), "_blank", "noopener,noreferrer")}
+                      onTableChange={() => { queryClient.invalidateQueries({ queryKey: getListGuestsQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetGuestStatsQueryKey() }); }}
                       onDelete={() => handleDelete(guest.id, `${guest.firstName} ${guest.lastName}`)}
                       token={token}
                       onEditSuccess={() => {
@@ -353,20 +354,28 @@ export default function AdminDashboard() {
                                 ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
                                 : <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 mx-auto" />}
                             </td>
-                            <td className="p-3 text-xs text-muted-foreground">
-                              {table ? (
-                                <span className="bg-accent/10 text-accent px-2 py-0.5 rounded-full">{table.name}{guest.seatNumber ? ` #${guest.seatNumber}` : ""}</span>
-                              ) : <span className="text-muted-foreground/50">—</span>}
+                            <td className="p-3">
+                              <InlineTableSelect
+                                guest={guest}
+                                tables={tables ?? []}
+                                token={token}
+                                onSuccess={() => {
+                                  queryClient.invalidateQueries({ queryKey: getListGuestsQueryKey() });
+                                  queryClient.invalidateQueries({ queryKey: getGetGuestStatsQueryKey() });
+                                }}
+                              />
                             </td>
                             <td className="p-3">
-                              <span className="text-xs text-muted-foreground font-mono truncate max-w-[140px] block">/invite/{guest.slug}</span>
+                              <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px] block">/invite/{guest.slug}</span>
                             </td>
                             <td className="p-3">
-                              <div className="flex items-center justify-end gap-1">
-                                <IconBtn title="Копировать ссылку" onClick={() => handleCopyLink(guest.slug)}><Copy className="w-3.5 h-3.5" /></IconBtn>
-                                <IconBtn title="Открыть в новой вкладке" onClick={() => window.open(getInviteUrl(guest.slug), "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5" /></IconBtn>
-                                <IconBtn title="Telegram" onClick={() => handleTelegram(guest.slug)}><MessageSquare className="w-3.5 h-3.5 text-blue-500" /></IconBtn>
-                                <IconBtn title="Текст + ссылка" onClick={() => handleCopyMessage(guest)}><Mail className="w-3.5 h-3.5 text-accent" /></IconBtn>
+                              <div className="flex items-center justify-end gap-0.5">
+                                <div className="flex items-center gap-0.5 bg-blue-50 rounded-lg px-1 py-0.5 mr-1" title="Поделиться">
+                                  <IconBtn title="Скопировать ссылку" onClick={() => handleCopyLink(guest.slug)}><Copy className="w-3.5 h-3.5" /></IconBtn>
+                                  <IconBtn title="Отправить в Telegram" onClick={() => handleTelegram(guest.slug)}><MessageSquare className="w-3.5 h-3.5 text-blue-500" /></IconBtn>
+                                  <IconBtn title="Скопировать текст + ссылку" onClick={() => handleCopyMessage(guest)}><Mail className="w-3.5 h-3.5 text-accent" /></IconBtn>
+                                  <IconBtn title="Открыть приглашение" onClick={() => window.open(getInviteUrl(guest.slug), "_blank", "noopener,noreferrer")}><ExternalLink className="w-3.5 h-3.5" /></IconBtn>
+                                </div>
                                 <EditGuestDialog
                                   guest={guest}
                                   tables={tables ?? []}
@@ -377,7 +386,7 @@ export default function AdminDashboard() {
                                     toast({ title: "Гость обновлён" });
                                   }}
                                 />
-                                <IconBtn title="Удалить" onClick={() => handleDelete(guest.id, `${guest.firstName} ${guest.lastName}`)} className="text-destructive hover:bg-destructive/10">
+                                <IconBtn title="Удалить гостя" onClick={() => handleDelete(guest.id, `${guest.firstName} ${guest.lastName}`)} className="text-destructive hover:bg-destructive/10">
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </IconBtn>
                               </div>
@@ -502,6 +511,28 @@ export default function AdminDashboard() {
   );
 }
 
+function InlineTableSelect({ guest, tables, token, onSuccess }: { guest: any; tables: any[]; token: string; onSuccess: () => void }) {
+  const updateGuest = useUpdateGuest({ request: { headers: { Authorization: `Bearer ${token}` } } });
+  const current = guest.tableId ? String(guest.tableId) : "none";
+
+  if (tables.length === 0) return <span className="text-muted-foreground/50 text-xs">—</span>;
+
+  return (
+    <Select value={current} onValueChange={(v) => {
+      const tableId = v !== "none" ? parseInt(v) : null;
+      updateGuest.mutate({ id: guest.id, data: { tableId, seatNumber: tableId ? guest.seatNumber : null } }, { onSuccess });
+    }}>
+      <SelectTrigger className="h-7 text-xs border-0 bg-accent/8 hover:bg-accent/15 focus:ring-0 w-auto min-w-[80px] max-w-[120px] px-2 rounded-full">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none"><span className="text-muted-foreground">Не назначен</span></SelectItem>
+        {tables.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function RsvpBar({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
@@ -547,21 +578,29 @@ function StatCard({ title, value, sub, icon }: { title: string; value: number; s
   );
 }
 
-function GuestCard({ guest, tables, onCopyLink, onCopyMessage, onTelegram, onOpen, onDelete, token, onEditSuccess }: {
+function GuestCard({ guest, tables, onCopyLink, onCopyMessage, onTelegram, onOpen, onDelete, token, onEditSuccess, onTableChange }: {
   guest: any; tables: any[]; onCopyLink: () => void; onCopyMessage: () => void; onTelegram: () => void;
-  onOpen: () => void; onDelete: () => void; token: string; onEditSuccess: () => void;
+  onOpen: () => void; onDelete: () => void; token: string; onEditSuccess: () => void; onTableChange: () => void;
 }) {
-  const table = tables.find((t) => t.id === guest.tableId);
+  const displayName = guest.salutationType === "Дорогие" && guest.secondaryFirstName
+    ? `${guest.firstName} и ${guest.secondaryFirstName}`
+    : `${guest.firstName} ${guest.lastName}`;
+
   return (
     <div className="bg-white/60 rounded-xl border border-border/50 p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="font-semibold text-primary">{guest.firstName} {guest.lastName}</p>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-semibold text-primary truncate">{displayName}</p>
           <p className="text-xs text-muted-foreground">{guest.salutationType} · {guest.guestsCount} персон</p>
-          {table && <p className="text-xs text-accent mt-0.5">{table.name}{guest.seatNumber ? ` #${guest.seatNumber}` : ""}</p>}
         </div>
         <RsvpBadge status={guest.rsvpStatus} />
       </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Стол:</span>
+        <InlineTableSelect guest={guest} tables={tables} token={token} onSuccess={onTableChange} />
+      </div>
+
       <div className="flex gap-3 text-xs text-muted-foreground">
         <span className={`flex items-center gap-1 ${guest.invitationOpened ? "text-green-600" : ""}`}>
           <Eye className="w-3.5 h-3.5" />{guest.invitationOpened ? "Открыл" : "Не открыл"}
@@ -571,33 +610,53 @@ function GuestCard({ guest, tables, onCopyLink, onCopyMessage, onTelegram, onOpe
         </span>
       </div>
       <p className="text-xs text-muted-foreground font-mono bg-white/50 px-2 py-1 rounded truncate">/invite/{guest.slug}</p>
-      <div className="grid grid-cols-2 gap-2">
-        <Button size="sm" variant="outline" className="text-xs" onClick={onCopyLink}><Copy className="w-3 h-3 mr-1.5" />Ссылка</Button>
-        <Button size="sm" variant="outline" className="text-xs" onClick={onOpen}><ExternalLink className="w-3 h-3 mr-1.5" />Открыть</Button>
-        <Button size="sm" variant="outline" className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={onTelegram}><MessageSquare className="w-3 h-3 mr-1.5" />Telegram</Button>
-        <Button size="sm" variant="outline" className="text-xs text-accent border-accent/30 hover:bg-accent/10" onClick={onCopyMessage}><Mail className="w-3 h-3 mr-1.5" />Текст</Button>
-      </div>
-      <div className="flex gap-2 pt-1">
-        <EditGuestDialog guest={guest} tables={tables} token={token} onSuccess={onEditSuccess} />
-        <Button size="sm" variant="ghost" className="text-xs text-destructive hover:bg-destructive/10 flex-1" onClick={onDelete}>
-          <Trash2 className="w-3 h-3 mr-1.5" />Удалить
-        </Button>
+
+      <div className="space-y-2">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Поделиться</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button size="sm" variant="outline" className="text-xs justify-start" onClick={onCopyLink}><Copy className="w-3 h-3 mr-1.5" />Ссылка</Button>
+          <Button size="sm" variant="outline" className="text-xs justify-start text-blue-600 border-blue-200 hover:bg-blue-50" onClick={onTelegram}><MessageSquare className="w-3 h-3 mr-1.5" />Telegram</Button>
+          <Button size="sm" variant="outline" className="text-xs justify-start text-accent border-accent/30 hover:bg-accent/10" onClick={onCopyMessage}><Mail className="w-3 h-3 mr-1.5" />Текст+ссылка</Button>
+          <Button size="sm" variant="outline" className="text-xs justify-start" onClick={onOpen}><ExternalLink className="w-3 h-3 mr-1.5" />Открыть</Button>
+        </div>
+        <div className="flex gap-2 pt-1 border-t border-border/30">
+          <div className="flex-1"><EditGuestDialog guest={guest} tables={tables} token={token} onSuccess={onEditSuccess} /></div>
+          <Button size="sm" variant="ghost" className="text-xs text-destructive hover:bg-destructive/10" onClick={onDelete}>
+            <Trash2 className="w-3 h-3 mr-1.5" />Удалить
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
 
+const EMPTY_ADD_FORM = { firstName: "", lastName: "", salutationType: "Дорогой" as any, guestsCount: 1, secondaryFirstName: "", sharedLastName: "", coupleDisplayMode: "full_shared_last_name" as any };
+
 function AddGuestDialog({ token, onSuccess }: { token: string; onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ firstName: "", lastName: "", salutationType: "Дорогой" as any, guestsCount: 1, slug: "" });
+  const [form, setForm] = useState(EMPTY_ADD_FORM);
   const createGuest = useCreateGuest({ request: { headers: { Authorization: `Bearer ${token}` } } });
+
+  const isCouple = form.salutationType === "Дорогие";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createGuest.mutate({ data: form }, {
+    const data: any = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      salutationType: form.salutationType,
+      guestsCount: form.guestsCount,
+    };
+    if (isCouple && form.secondaryFirstName) {
+      data.primaryFirstName = form.firstName;
+      data.secondaryFirstName = form.secondaryFirstName;
+      data.sharedLastName = form.sharedLastName || null;
+      data.coupleDisplayMode = form.coupleDisplayMode;
+    }
+    createGuest.mutate({ data }, {
       onSuccess: () => {
         setOpen(false);
-        setForm({ firstName: "", lastName: "", salutationType: "Дорогой", guestsCount: 1, slug: "" });
+        setForm(EMPTY_ADD_FORM);
         onSuccess();
       },
     });
@@ -608,30 +667,75 @@ function AddGuestDialog({ token, onSuccess }: { token: string; onSuccess: () => 
       <DialogTrigger asChild>
         <Button className="bg-accent hover:bg-accent/90 text-white" size="sm"><Plus className="w-4 h-4 mr-1.5" />Добавить гостя</Button>
       </DialogTrigger>
-      <DialogContent className="bg-background max-w-md w-[calc(100vw-2rem)]">
+      <DialogContent className="bg-background max-w-md w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-serif text-2xl text-primary">Новый гость</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-sm">Имя</Label><Input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-            <div className="space-y-1.5"><Label className="text-sm">Фамилия</Label><Input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
-          </div>
           <div className="space-y-1.5">
             <Label className="text-sm">Обращение</Label>
             <Select value={form.salutationType} onValueChange={(v: any) => setForm({ ...form, salutationType: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Дорогой">Дорогой</SelectItem>
-                <SelectItem value="Дорогая">Дорогая</SelectItem>
-                <SelectItem value="Дорогие">Дорогие</SelectItem>
+                <SelectItem value="Дорогой">Дорогой (он)</SelectItem>
+                <SelectItem value="Дорогая">Дорогая (она)</SelectItem>
+                <SelectItem value="Дорогие">Дорогие (пара)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5"><Label className="text-sm">Количество персон</Label><Input type="number" min="1" required value={form.guestsCount} onChange={(e) => setForm({ ...form, guestsCount: parseInt(e.target.value) || 1 })} /></div>
+
+          {isCouple ? (
+            <div className="bg-accent/5 rounded-xl p-3 space-y-3 border border-accent/20">
+              <p className="text-xs text-muted-foreground font-medium">Пара — оба получат одну ссылку</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Имя 1-го</Label>
+                  <Input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="Светлана" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Имя 2-го</Label>
+                  <Input value={form.secondaryFirstName} onChange={(e) => setForm({ ...form, secondaryFirstName: e.target.value })} placeholder="Дмитрий" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Общая фамилия</Label>
+                  <Input value={form.sharedLastName} onChange={(e) => setForm({ ...form, sharedLastName: e.target.value })} placeholder="Петровы" />
+                  <Input className="hidden" value={form.lastName || form.sharedLastName || form.firstName} onChange={() => {}} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Формат обращения</Label>
+                  <Select value={form.coupleDisplayMode} onValueChange={(v: any) => setForm({ ...form, coupleDisplayMode: v })}>
+                    <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="first_names_only">Только имена</SelectItem>
+                      <SelectItem value="full_shared_last_name">Имена + фамилия</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="text-xs bg-white/60 px-3 py-2 rounded-lg text-primary/70 font-serif italic">
+                Пример: «Дорогие {form.firstName || "Имя1"}{form.secondaryFirstName ? ` и ${form.secondaryFirstName}` : ""}
+                {form.coupleDisplayMode === "full_shared_last_name" && form.sharedLastName ? ` ${form.sharedLastName}` : ""}»
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-sm">Имя</Label><Input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label className="text-sm">Фамилия</Label><Input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+            </div>
+          )}
+
+          {isCouple && (
+            <div className="space-y-1.5">
+              <Label className="text-sm">Фамилия (для slug и поиска)</Label>
+              <Input required placeholder="petrov" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <Label className="text-sm">Slug <span className="text-muted-foreground">(опционально)</span></Label>
-            <Input placeholder="ivanov-family" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            <p className="text-xs text-muted-foreground">Если оставить пустым — сгенерируется автоматически</p>
+            <Label className="text-sm">Количество персон</Label>
+            <Input type="number" min="1" required value={form.guestsCount} onChange={(e) => setForm({ ...form, guestsCount: parseInt(e.target.value) || 1 })} />
           </div>
+
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={createGuest.isPending}>
             {createGuest.isPending ? "Добавление..." : "Добавить гостя"}
           </Button>
@@ -648,16 +752,39 @@ function EditGuestDialog({ guest, tables, token, onSuccess }: { guest: any; tabl
     lastName: guest.lastName,
     salutationType: guest.salutationType,
     guestsCount: guest.guestsCount,
+    secondaryFirstName: guest.secondaryFirstName ?? "",
+    sharedLastName: guest.sharedLastName ?? "",
+    coupleDisplayMode: guest.coupleDisplayMode ?? "full_shared_last_name",
     tableId: guest.tableId ? String(guest.tableId) : "none",
     seatNumber: guest.seatNumber ? String(guest.seatNumber) : "",
   });
   const updateGuest = useUpdateGuest({ request: { headers: { Authorization: `Bearer ${token}` } } });
 
+  const isCouple = form.salutationType === "Дорогие";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const tableId = form.tableId !== "none" ? parseInt(form.tableId) : null;
     const seatNumber = form.seatNumber ? parseInt(form.seatNumber) : null;
-    updateGuest.mutate({ id: guest.id, data: { firstName: form.firstName, lastName: form.lastName, salutationType: form.salutationType, guestsCount: form.guestsCount, tableId, seatNumber } }, {
+    const data: any = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      salutationType: form.salutationType,
+      guestsCount: form.guestsCount,
+      tableId,
+      seatNumber,
+    };
+    if (isCouple) {
+      data.primaryFirstName = form.firstName;
+      data.secondaryFirstName = form.secondaryFirstName || null;
+      data.sharedLastName = form.sharedLastName || null;
+      data.coupleDisplayMode = form.coupleDisplayMode;
+    } else {
+      data.secondaryFirstName = null;
+      data.sharedLastName = null;
+      data.primaryFirstName = null;
+    }
+    updateGuest.mutate({ id: guest.id, data }, {
       onSuccess: () => { setOpen(false); onSuccess(); },
     });
   };
@@ -665,30 +792,66 @@ function EditGuestDialog({ guest, tables, token, onSuccess }: { guest: any; tabl
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button title="Редактировать" className="p-1.5 rounded-md hover:bg-accent/10 text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 text-xs">
+        <button title="Редактировать" className="p-1.5 rounded-md hover:bg-accent/10 text-muted-foreground hover:text-primary transition-colors">
           <Edit className="w-3.5 h-3.5" />
-          <span className="sm:hidden">Редактировать</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="bg-background max-w-md w-[calc(100vw-2rem)]">
+      <DialogContent className="bg-background max-w-md w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-serif text-xl text-primary">Редактировать гостя</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-sm">Имя</Label><Input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-            <div className="space-y-1.5"><Label className="text-sm">Фамилия</Label><Input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
-          </div>
           <div className="space-y-1.5">
             <Label className="text-sm">Обращение</Label>
             <Select value={form.salutationType} onValueChange={(v: any) => setForm({ ...form, salutationType: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Дорогой">Дорогой</SelectItem>
-                <SelectItem value="Дорогая">Дорогая</SelectItem>
-                <SelectItem value="Дорогие">Дорогие</SelectItem>
+                <SelectItem value="Дорогой">Дорогой (он)</SelectItem>
+                <SelectItem value="Дорогая">Дорогая (она)</SelectItem>
+                <SelectItem value="Дорогие">Дорогие (пара)</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {isCouple ? (
+            <div className="bg-accent/5 rounded-xl p-3 space-y-3 border border-accent/20">
+              <p className="text-xs text-muted-foreground font-medium">Пара</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-sm">Имя 1-го</Label><Input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+                <div className="space-y-1.5"><Label className="text-sm">Имя 2-го</Label><Input value={form.secondaryFirstName} onChange={(e) => setForm({ ...form, secondaryFirstName: e.target.value })} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-sm">Общая фамилия</Label><Input value={form.sharedLastName} onChange={(e) => setForm({ ...form, sharedLastName: e.target.value })} /></div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Формат</Label>
+                  <Select value={form.coupleDisplayMode} onValueChange={(v: any) => setForm({ ...form, coupleDisplayMode: v })}>
+                    <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="first_names_only">Только имена</SelectItem>
+                      <SelectItem value="full_shared_last_name">Имена + фамилия</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="text-xs bg-white/60 px-3 py-2 rounded-lg text-primary/70 font-serif italic">
+                «Дорогие {form.firstName}{form.secondaryFirstName ? ` и ${form.secondaryFirstName}` : ""}
+                {form.coupleDisplayMode === "full_shared_last_name" && form.sharedLastName ? ` ${form.sharedLastName}` : ""}»
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-sm">Имя</Label><Input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label className="text-sm">Фамилия</Label><Input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+            </div>
+          )}
+
+          {isCouple && (
+            <div className="space-y-1.5">
+              <Label className="text-sm">Фамилия (для slug)</Label>
+              <Input required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+            </div>
+          )}
+
           <div className="space-y-1.5"><Label className="text-sm">Количество персон</Label><Input type="number" min="1" required value={form.guestsCount} onChange={(e) => setForm({ ...form, guestsCount: parseInt(e.target.value) || 1 })} /></div>
+
           {tables.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -707,6 +870,7 @@ function EditGuestDialog({ guest, tables, token, onSuccess }: { guest: any; tabl
               </div>
             </div>
           )}
+
           <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white" disabled={updateGuest.isPending}>
             {updateGuest.isPending ? "Сохранение..." : "Сохранить"}
           </Button>
@@ -798,13 +962,76 @@ function DeleteTableBtn({ tableId, tableName, token, onSuccess }: { tableId: num
   );
 }
 
+const TEMPLATE_OPTIONS = [
+  {
+    key: "default",
+    label: "Классический",
+    desc: "Кремовый фон, золото, плавающие лепестки",
+    colors: ["#FFF9F5", "#C9A96E", "#D4A5A5", "#2C1810"],
+  },
+  {
+    key: "classic",
+    label: "Элегантный",
+    desc: "Айвори, глубокий синий, золотые акценты",
+    colors: ["#FAF7F0", "#D4AF37", "#1C2B4A", "#F0E8D8"],
+  },
+  {
+    key: "floral",
+    label: "Цветочный",
+    desc: "Нежно-розовый, пыльная роза, флоральные украшения",
+    colors: ["#FDF0F4", "#E8A0B4", "#8B4458", "#FDF5F8"],
+  },
+] as const;
+
 function SettingsForm({ initialData, onSubmit, isPending }: { initialData: any; onSubmit: (data: any) => void; isPending: boolean }) {
   const [data, setData] = useState(initialData);
   const f = (key: string, val: any) => setData((d: any) => ({ ...d, [key]: val }));
+  const baseUrl = import.meta.env.BASE_URL as string;
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(data); }} className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(data); }} className="space-y-6">
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Palette className="w-4 h-4 text-accent" />
+          <Label className="text-base font-medium">Шаблон приглашения</Label>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {TEMPLATE_OPTIONS.map((tpl) => (
+            <button
+              key={tpl.key}
+              type="button"
+              onClick={() => f("activeTemplate", tpl.key)}
+              className={`text-left p-3 rounded-xl border-2 transition-all ${
+                data.activeTemplate === tpl.key
+                  ? "border-accent bg-accent/5 shadow-sm"
+                  : "border-border/40 bg-white/40 hover:border-accent/40"
+              }`}
+            >
+              <div className="flex gap-1.5 mb-2">
+                {tpl.colors.map((c, i) => (
+                  <div key={i} className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ background: c }} />
+                ))}
+              </div>
+              <p className="font-medium text-sm text-primary">{tpl.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{tpl.desc}</p>
+              {data.activeTemplate === tpl.key && (
+                <p className="text-xs text-accent font-medium mt-1.5">Активен</p>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {TEMPLATE_OPTIONS.map((tpl) => (
+            <a key={tpl.key} href={`${baseUrl}preview/template/${tpl.key}`} target="_blank" rel="noopener noreferrer"
+              className="text-xs text-accent underline underline-offset-2 hover:opacity-80">
+              Предпросмотр: {tpl.label}
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border/30 pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5 sm:col-span-2"><Label>Заголовок свадьбы</Label><Input value={data.weddingTitle} onChange={(e) => f("weddingTitle", e.target.value)} required /></div>
         <div className="space-y-1.5"><Label>Имя жениха</Label><Input value={data.groomName} onChange={(e) => f("groomName", e.target.value)} required /></div>
         <div className="space-y-1.5"><Label>Имя невесты</Label><Input value={data.brideName} onChange={(e) => f("brideName", e.target.value)} required /></div>
@@ -826,6 +1053,7 @@ function SettingsForm({ initialData, onSubmit, isPending }: { initialData: any; 
           <Label htmlFor="countdown-enabled">Показывать таймер</Label>
         </div>
       </div>
+
       <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white" disabled={isPending}>
         {isPending ? "Сохранение..." : "Сохранить настройки"}
       </Button>

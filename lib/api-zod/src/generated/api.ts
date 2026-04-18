@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 import * as zod from "zod";
 
@@ -24,6 +24,16 @@ export const ListGuestsResponseItem = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -46,6 +56,16 @@ export const CreateGuestBody = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number().default(createGuestBodyGuestsCountDefault),
   slug: zod.string().nullish(),
+  primaryFirstName: zod.string().nullish(),
+  secondaryFirstName: zod.string().nullish(),
+  sharedLastName: zod.string().nullish(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullish(),
 });
 
 /**
@@ -62,6 +82,16 @@ export const GetGuestResponse = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -85,6 +115,16 @@ export const UpdateGuestBody = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]).optional(),
   guestsCount: zod.number().optional(),
   slug: zod.string().optional(),
+  primaryFirstName: zod.string().nullish(),
+  secondaryFirstName: zod.string().nullish(),
+  sharedLastName: zod.string().nullish(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullish(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]).optional(),
   rsvpComment: zod.string().nullish(),
   tableId: zod.number().nullish(),
@@ -98,6 +138,16 @@ export const UpdateGuestResponse = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -129,6 +179,16 @@ export const GetGuestBySlugResponse = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -153,6 +213,16 @@ export const MarkInvitationOpenedResponse = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -177,6 +247,16 @@ export const MarkGameCompletedResponse = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -206,6 +286,16 @@ export const SubmitRsvpResponse = zod.object({
   salutationType: zod.enum(["Дорогой", "Дорогая", "Дорогие"]),
   guestsCount: zod.number(),
   slug: zod.string(),
+  primaryFirstName: zod.string().nullable(),
+  secondaryFirstName: zod.string().nullable(),
+  sharedLastName: zod.string().nullable(),
+  coupleDisplayMode: zod
+    .union([
+      zod.literal("first_names_only"),
+      zod.literal("full_shared_last_name"),
+      zod.literal(null),
+    ])
+    .nullable(),
   invitationOpened: zod.boolean(),
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
@@ -253,6 +343,7 @@ export const GetSettingsResponse = zod.object({
   adminPassword: zod.string(),
   gameEnabled: zod.boolean(),
   countdownEnabled: zod.boolean(),
+  activeTemplate: zod.enum(["default", "classic", "floral"]),
   updatedAt: zod.coerce.date(),
 });
 
@@ -276,6 +367,7 @@ export const UpdateSettingsBody = zod.object({
   adminPassword: zod.string().optional(),
   gameEnabled: zod.boolean().optional(),
   countdownEnabled: zod.boolean().optional(),
+  activeTemplate: zod.enum(["default", "classic", "floral"]).optional(),
 });
 
 export const UpdateSettingsResponse = zod.object({
@@ -296,6 +388,7 @@ export const UpdateSettingsResponse = zod.object({
   adminPassword: zod.string(),
   gameEnabled: zod.boolean(),
   countdownEnabled: zod.boolean(),
+  activeTemplate: zod.enum(["default", "classic", "floral"]),
   updatedAt: zod.coerce.date(),
 });
 

@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Invitation from "@/pages/invitation";
+import TemplatePreview from "@/pages/template-preview";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/invite/:slug" component={Invitation} />
+      <Route path="/preview/template/:key" component={TemplatePreview} />
       <Route component={NotFound} />
     </Switch>
   );

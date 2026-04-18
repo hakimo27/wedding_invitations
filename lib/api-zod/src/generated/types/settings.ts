@@ -3,8 +3,9 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
+import type { SettingsActiveTemplate } from "./settingsActiveTemplate";
 
 export interface Settings {
   id: number;
@@ -27,5 +28,6 @@ export interface Settings {
   adminPassword: string;
   gameEnabled: boolean;
   countdownEnabled: boolean;
+  activeTemplate: SettingsActiveTemplate;
   updatedAt: Date;
 }

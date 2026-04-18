@@ -22,6 +22,7 @@ export const settingsTable = pgTable("settings", {
   adminPassword: text("admin_password").notNull().default("wedding2025"),
   gameEnabled: boolean("game_enabled").notNull().default(true),
   countdownEnabled: boolean("countdown_enabled").notNull().default(true),
+  activeTemplate: text("active_template").notNull().default("default"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

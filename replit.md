@@ -39,6 +39,11 @@ A premium personalized wedding invitation web application where each guest recei
 - Table seating system (CRUD) — assign guests to tables + seat numbers
 - Activity log — tracks when guests open invitation, complete game, submit RSVP
 - Enhanced stats: total/attending/not_attending/pending with person counts
+- **3 invitation templates** — Классический (default), Элегантный (classic), Цветочный (floral)
+- **Template preview** — `/preview/template/:key` shows each template with sample data
+- **Couple guest support** — "Дорогие" salutation with secondary first name, shared last name
+- **Inline table assignment** — dropdown directly in guest list row
+- **Redesigned action groups** — Share (Copy/Telegram/Text/Open) and Edit/Delete clearly separated
 
 ### Architecture
 - **Frontend**: `artifacts/wedding/` — React + Vite + Tailwind + Framer Motion
@@ -47,26 +52,60 @@ A premium personalized wedding invitation web application where each guest recei
 - **API Spec**: `lib/api-spec/openapi.yaml`
 - **Generated Hooks**: `lib/api-client-react/src/generated/api.ts`
 - **Generated Zod Schemas**: `lib/api-zod/src/generated/api.ts`
+- **Templates**: `artifacts/wedding/src/templates/` — DefaultTemplate, ClassicTemplate, FloralTemplate
 
 ### DB Tables
-- `guests` — includes `tableId`, `seatNumber` (nullable FK to `wedding_tables`)
-- `settings` — global wedding config (single row)
+- `guests` — includes `tableId`, `seatNumber`, `primaryFirstName`, `secondaryFirstName`, `sharedLastName`, `coupleDisplayMode`
+- `settings` — global wedding config (single row), includes `activeTemplate`
 - `wedding_tables` — table seating (name, seatsCount, sortOrder, note)
 - `activity_logs` — event log (guestId, guestName, eventType, payload, createdAt)
 
 ### URL Routes
 - `/` — redirects to `/admin`
 - `/admin` — admin panel (protected by password)
-- `/invite/:slug` — individual guest invitation page
+- `/admin/login` — admin login page
+- `/invite/:slug` — individual guest invitation page (renders active template)
+- `/preview/template/:key` — template preview with sample data (default/classic/floral)
+- `/admin/login` — admin login
 
-### Admin Login
-Default password: `wedding2025` (changeable in settings)
+### Admin Panel
+- **Дашборд** — stats cards + RSVP bar chart + recent activity feed
+- **Гости** — guest list with search/filter, Add/Edit dialogs with couple fields, inline table assignment, grouped share actions
+- **Столы** — table CRUD with occupancy bars and guest roster
+- **Настройки** — template picker (3 templates with color swatches + preview links), all wedding settings
 
-### Sample Guest Slugs
-- `/invite/mariya-petrova-test1`
-- `/invite/ivan-sidorov-test2`
-- `/invite/elena-sergey-kuznetsy-test3`
+### Key Files
+- `lib/db/src/schema/guests.ts` — guest table schema with couple fields
+- `lib/db/src/schema/settings.ts` — settings schema with activeTemplate
+- `artifacts/wedding/src/templates/types.ts` — shared template types + `getGreeting()` helper
+- `artifacts/wedding/src/templates/DefaultTemplate.tsx` — cream/gold classic style
+- `artifacts/wedding/src/templates/ClassicTemplate.tsx` — ivory/navy/gold elegant style
+- `artifacts/wedding/src/templates/FloralTemplate.tsx` — blush pink/rose floral style
+- `artifacts/wedding/src/pages/template-preview.tsx` — template preview page with sample data
+- `artifacts/wedding/src/pages/invitation.tsx` — invitation page (routes to correct template)
+- `artifacts/wedding/src/pages/admin-dashboard.tsx` — full admin panel
+- `artifacts/api-server/src/routes/guests.ts` — guest CRUD (slug uses `||` not `??`)
 
-### Important Notes
-- After changing `lib/api-spec/openapi.yaml`, run: `pnpm --filter @workspace/api-spec run codegen` then manually fix `lib/api-zod/src/index.ts` to only `export * from "./generated/api";`
-- Three.js is installed as a regular dependency (not devDependency) in `artifacts/wedding/`
+### Codegen Note
+After running `pnpm --filter @workspace/api-spec run codegen`, always reset `lib/api-zod/src/index.ts` to contain only:
+```
+export * from "./generated/api";
+```
+
+### Auth
+- Admin password stored in settings table, default: `wedding2025`
+- Token returned from `/api/admin/login` is a SHA-256 hash of the password
+- All admin API routes require `Authorization: Bearer <token>`
+
+### Templates
+- `activeTemplate` field in settings determines which template renders on invite pages
+- Values: `"default"` | `"classic"` | `"floral"`
+- Preview any template at `/preview/template/<key>` (no auth required)
+
+### Couple Guest Logic
+- When `salutationType === "Дорогие"`:
+  - `primaryFirstName` = first person's name (same as `firstName`)
+  - `secondaryFirstName` = second person's name
+  - `sharedLastName` = shared surname (e.g., "Петровы")
+  - `coupleDisplayMode` = `"first_names_only"` | `"full_shared_last_name"`
+- `getGreeting(guest)` helper in `src/templates/types.ts` returns the correct greeting

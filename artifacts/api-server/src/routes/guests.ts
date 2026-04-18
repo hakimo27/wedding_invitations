@@ -99,7 +99,7 @@ router.post("/guests", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const slug = parsed.data.slug ?? generateSlug(parsed.data.firstName, parsed.data.lastName);
+  const slug = parsed.data.slug || generateSlug(parsed.data.firstName, parsed.data.lastName);
   const [guest] = await db
     .insert(guestsTable)
     .values({
@@ -108,6 +108,10 @@ router.post("/guests", async (req, res): Promise<void> => {
       salutationType: parsed.data.salutationType,
       guestsCount: parsed.data.guestsCount ?? 1,
       slug,
+      primaryFirstName: parsed.data.primaryFirstName ?? null,
+      secondaryFirstName: parsed.data.secondaryFirstName ?? null,
+      sharedLastName: parsed.data.sharedLastName ?? null,
+      coupleDisplayMode: parsed.data.coupleDisplayMode ?? "first_names_only",
     })
     .returning();
   res.status(201).json(guest);

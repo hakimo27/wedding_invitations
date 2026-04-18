@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 export interface HealthStatus {
   status: string;
@@ -22,6 +22,18 @@ export const GuestSalutationType = {
   Дорогие: "Дорогие",
 } as const;
 
+/**
+ * @nullable
+ */
+export type GuestCoupleDisplayMode =
+  | (typeof GuestCoupleDisplayMode)[keyof typeof GuestCoupleDisplayMode]
+  | null;
+
+export const GuestCoupleDisplayMode = {
+  first_names_only: "first_names_only",
+  full_shared_last_name: "full_shared_last_name",
+} as const;
+
 export type GuestRsvpStatus =
   (typeof GuestRsvpStatus)[keyof typeof GuestRsvpStatus];
 
@@ -38,6 +50,14 @@ export interface Guest {
   salutationType: GuestSalutationType;
   guestsCount: number;
   slug: string;
+  /** @nullable */
+  primaryFirstName: string | null;
+  /** @nullable */
+  secondaryFirstName: string | null;
+  /** @nullable */
+  sharedLastName: string | null;
+  /** @nullable */
+  coupleDisplayMode: GuestCoupleDisplayMode;
   invitationOpened: boolean;
   gameCompleted: boolean;
   rsvpStatus: GuestRsvpStatus;
@@ -60,6 +80,18 @@ export const CreateGuestBodySalutationType = {
   Дорогие: "Дорогие",
 } as const;
 
+/**
+ * @nullable
+ */
+export type CreateGuestBodyCoupleDisplayMode =
+  | (typeof CreateGuestBodyCoupleDisplayMode)[keyof typeof CreateGuestBodyCoupleDisplayMode]
+  | null;
+
+export const CreateGuestBodyCoupleDisplayMode = {
+  first_names_only: "first_names_only",
+  full_shared_last_name: "full_shared_last_name",
+} as const;
+
 export interface CreateGuestBody {
   firstName: string;
   lastName: string;
@@ -67,6 +99,14 @@ export interface CreateGuestBody {
   guestsCount?: number;
   /** @nullable */
   slug?: string | null;
+  /** @nullable */
+  primaryFirstName?: string | null;
+  /** @nullable */
+  secondaryFirstName?: string | null;
+  /** @nullable */
+  sharedLastName?: string | null;
+  /** @nullable */
+  coupleDisplayMode?: CreateGuestBodyCoupleDisplayMode;
 }
 
 export type UpdateGuestBodySalutationType =
@@ -76,6 +116,18 @@ export const UpdateGuestBodySalutationType = {
   Дорогой: "Дорогой",
   Дорогая: "Дорогая",
   Дорогие: "Дорогие",
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateGuestBodyCoupleDisplayMode =
+  | (typeof UpdateGuestBodyCoupleDisplayMode)[keyof typeof UpdateGuestBodyCoupleDisplayMode]
+  | null;
+
+export const UpdateGuestBodyCoupleDisplayMode = {
+  first_names_only: "first_names_only",
+  full_shared_last_name: "full_shared_last_name",
 } as const;
 
 export type UpdateGuestBodyRsvpStatus =
@@ -93,6 +145,14 @@ export interface UpdateGuestBody {
   salutationType?: UpdateGuestBodySalutationType;
   guestsCount?: number;
   slug?: string;
+  /** @nullable */
+  primaryFirstName?: string | null;
+  /** @nullable */
+  secondaryFirstName?: string | null;
+  /** @nullable */
+  sharedLastName?: string | null;
+  /** @nullable */
+  coupleDisplayMode?: UpdateGuestBodyCoupleDisplayMode;
   rsvpStatus?: UpdateGuestBodyRsvpStatus;
   /** @nullable */
   rsvpComment?: string | null;
@@ -116,6 +176,15 @@ export interface RsvpBody {
   rsvpComment?: string | null;
 }
 
+export type SettingsActiveTemplate =
+  (typeof SettingsActiveTemplate)[keyof typeof SettingsActiveTemplate];
+
+export const SettingsActiveTemplate = {
+  default: "default",
+  classic: "classic",
+  floral: "floral",
+} as const;
+
 export interface Settings {
   id: number;
   weddingTitle: string;
@@ -137,8 +206,18 @@ export interface Settings {
   adminPassword: string;
   gameEnabled: boolean;
   countdownEnabled: boolean;
+  activeTemplate: SettingsActiveTemplate;
   updatedAt: string;
 }
+
+export type UpdateSettingsBodyActiveTemplate =
+  (typeof UpdateSettingsBodyActiveTemplate)[keyof typeof UpdateSettingsBodyActiveTemplate];
+
+export const UpdateSettingsBodyActiveTemplate = {
+  default: "default",
+  classic: "classic",
+  floral: "floral",
+} as const;
 
 export interface UpdateSettingsBody {
   weddingTitle?: string;
@@ -160,6 +239,7 @@ export interface UpdateSettingsBody {
   adminPassword?: string;
   gameEnabled?: boolean;
   countdownEnabled?: boolean;
+  activeTemplate?: UpdateSettingsBodyActiveTemplate;
 }
 
 export interface GuestStats {

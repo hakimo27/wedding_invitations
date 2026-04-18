@@ -1,24 +1,18 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.2.0
+  version: 0.3.0
   description: Wedding Invitation API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: guests
-    description: Guest management
   - name: settings
-    description: Wedding settings
   - name: rsvp
-    description: RSVP operations
   - name: tables
-    description: Table seating management
   - name: activity
-    description: Activity log
 paths:
   /healthz:
     get:
@@ -410,16 +404,14 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
     ErrorResponse:
       type: object
       properties:
         error:
           type: string
-      required:
-        - error
+      required: [error]
 
     Guest:
       type: object
@@ -437,6 +429,15 @@ components:
           type: integer
         slug:
           type: string
+        primaryFirstName:
+          type: ["string", "null"]
+        secondaryFirstName:
+          type: ["string", "null"]
+        sharedLastName:
+          type: ["string", "null"]
+        coupleDisplayMode:
+          type: ["string", "null"]
+          enum: [first_names_only, full_shared_last_name, null]
         invitationOpened:
           type: boolean
         gameCompleted:
@@ -463,6 +464,10 @@ components:
         - salutationType
         - guestsCount
         - slug
+        - primaryFirstName
+        - secondaryFirstName
+        - sharedLastName
+        - coupleDisplayMode
         - invitationOpened
         - gameCompleted
         - rsvpStatus
@@ -487,6 +492,15 @@ components:
           default: 1
         slug:
           type: ["string", "null"]
+        primaryFirstName:
+          type: ["string", "null"]
+        secondaryFirstName:
+          type: ["string", "null"]
+        sharedLastName:
+          type: ["string", "null"]
+        coupleDisplayMode:
+          type: ["string", "null"]
+          enum: [first_names_only, full_shared_last_name, null]
       required:
         - firstName
         - lastName
@@ -506,6 +520,15 @@ components:
           type: integer
         slug:
           type: string
+        primaryFirstName:
+          type: ["string", "null"]
+        secondaryFirstName:
+          type: ["string", "null"]
+        sharedLastName:
+          type: ["string", "null"]
+        coupleDisplayMode:
+          type: ["string", "null"]
+          enum: [first_names_only, full_shared_last_name, null]
         rsvpStatus:
           type: string
           enum: [pending, attending, not_attending]
@@ -564,6 +587,9 @@ components:
           type: boolean
         countdownEnabled:
           type: boolean
+        activeTemplate:
+          type: string
+          enum: [default, classic, floral]
         updatedAt:
           type: string
           format: date-time
@@ -585,6 +611,7 @@ components:
         - adminPassword
         - gameEnabled
         - countdownEnabled
+        - activeTemplate
         - updatedAt
 
     UpdateSettingsBody:
@@ -622,6 +649,9 @@ components:
           type: boolean
         countdownEnabled:
           type: boolean
+        activeTemplate:
+          type: string
+          enum: [default, classic, floral]
 
     GuestStats:
       type: object

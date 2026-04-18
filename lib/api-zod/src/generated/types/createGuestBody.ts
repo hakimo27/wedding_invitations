@@ -3,8 +3,9 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
+import type { CreateGuestBodyCoupleDisplayMode } from "./createGuestBodyCoupleDisplayMode";
 import type { CreateGuestBodySalutationType } from "./createGuestBodySalutationType";
 
 export interface CreateGuestBody {
@@ -14,4 +15,12 @@ export interface CreateGuestBody {
   guestsCount?: number;
   /** @nullable */
   slug?: string | null;
+  /** @nullable */
+  primaryFirstName?: string | null;
+  /** @nullable */
+  secondaryFirstName?: string | null;
+  /** @nullable */
+  sharedLastName?: string | null;
+  /** @nullable */
+  coupleDisplayMode?: CreateGuestBodyCoupleDisplayMode;
 }

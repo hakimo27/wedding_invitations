@@ -3,8 +3,9 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
+import type { UpdateGuestBodyCoupleDisplayMode } from "./updateGuestBodyCoupleDisplayMode";
 import type { UpdateGuestBodyRsvpStatus } from "./updateGuestBodyRsvpStatus";
 import type { UpdateGuestBodySalutationType } from "./updateGuestBodySalutationType";
 
@@ -14,6 +15,14 @@ export interface UpdateGuestBody {
   salutationType?: UpdateGuestBodySalutationType;
   guestsCount?: number;
   slug?: string;
+  /** @nullable */
+  primaryFirstName?: string | null;
+  /** @nullable */
+  secondaryFirstName?: string | null;
+  /** @nullable */
+  sharedLastName?: string | null;
+  /** @nullable */
+  coupleDisplayMode?: UpdateGuestBodyCoupleDisplayMode;
   rsvpStatus?: UpdateGuestBodyRsvpStatus;
   /** @nullable */
   rsvpComment?: string | null;
