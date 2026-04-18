@@ -20,11 +20,58 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
+- `pnpm run build:prod` — production build → assembles `dist/server/` + `dist/public/`
+- `pnpm run start` — start production server (`dist/server/index.mjs`)
+- `pnpm run db:push` — push DB schema changes (run with DATABASE_URL set)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Production Deployment
+
+Full guide: `README_DEPLOY.md`
+
+### Quick start (VPS without Docker)
+```bash
+pnpm install
+cp .env.example .env  # fill in DATABASE_URL, ADMIN_PASSWORD, APP_BASE_URL
+export $(grep -v '^#' .env | xargs)
+pnpm db:push              # create DB tables
+pnpm build:prod           # build → dist/server/ + dist/public/
+pm2 start ecosystem.config.cjs --env production
+```
+
+### With Docker
+```bash
+cp .env.example .env      # fill in DB_PASSWORD, APP_BASE_URL, ADMIN_PASSWORD
+docker compose up -d --build
+docker compose exec app sh -c "pnpm db:push"
+```
+
+### Production build output
+```
+dist/
+├── server/     — Node.js bundle (serves API + static files)
+└── public/     — Frontend SPA (also served by nginx directly for perf)
+```
+
+### How production serving works
+- In `NODE_ENV=production`, the API server serves `dist/public/` as static files
+- All non-API routes fall back to `index.html` (SPA routing)
+- Nginx sits in front: serves `/assets/` directly, proxies `/api/` to Node.js
+- Nginx config: `deploy/nginx.conf`
+- PM2 config: `ecosystem.config.cjs`
+
+### Environment variables
+| Variable        | Required | Description                          |
+|-----------------|----------|--------------------------------------|
+| `NODE_ENV`      | yes      | `production`                         |
+| `PORT`          | yes      | Node.js port (default 3000)          |
+| `APP_BASE_URL`  | yes      | `https://wedding.yourdomain.com`     |
+| `DATABASE_URL`  | yes      | PostgreSQL connection string         |
+| `ADMIN_PASSWORD`| yes      | Admin panel password                 |
+| `CORS_ORIGIN`   | no       | Restrict CORS to this origin         |
 
 ## Project: Wedding Invitation App
 

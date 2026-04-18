@@ -27,6 +27,15 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Production build output (dist/ is built on server, not committed)
+# dist/ is already above
+
+# PM2 logs
+/logs/
+
+# Environment secrets — never commit!
+.env
+
 # misc
 /.sass-cache
 /connect.lock
