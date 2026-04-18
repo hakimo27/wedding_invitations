@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface HealthStatus {
   status: string;
@@ -43,6 +43,10 @@ export interface Guest {
   rsvpStatus: GuestRsvpStatus;
   /** @nullable */
   rsvpComment: string | null;
+  /** @nullable */
+  tableId: number | null;
+  /** @nullable */
+  seatNumber: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,6 +96,10 @@ export interface UpdateGuestBody {
   rsvpStatus?: UpdateGuestBodyRsvpStatus;
   /** @nullable */
   rsvpComment?: string | null;
+  /** @nullable */
+  tableId?: number | null;
+  /** @nullable */
+  seatNumber?: number | null;
 }
 
 export type RsvpBodyRsvpStatus =
@@ -162,6 +170,46 @@ export interface GuestStats {
   gameCompleted: number;
   invitationOpened: number;
   totalPersons: number;
+  attendingPersons: number;
+  notAttendingPersons: number;
+  pendingPersons: number;
+}
+
+export interface WeddingTable {
+  id: number;
+  name: string;
+  seatsCount: number;
+  sortOrder: number;
+  /** @nullable */
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTableBody {
+  name: string;
+  seatsCount?: number;
+  sortOrder?: number;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface UpdateTableBody {
+  name?: string;
+  seatsCount?: number;
+  sortOrder?: number;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface ActivityLog {
+  id: number;
+  guestId: number;
+  guestName: string;
+  eventType: string;
+  /** @nullable */
+  payload: string | null;
+  createdAt: string;
 }
 
 export interface AdminLoginBody {

@@ -13,6 +13,8 @@ export const guestsTable = pgTable("guests", {
   gameCompleted: boolean("game_completed").notNull().default(false),
   rsvpStatus: text("rsvp_status").notNull().default("pending"),
   rsvpComment: text("rsvp_comment"),
+  tableId: integer("table_id"),
+  seatNumber: integer("seat_number"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

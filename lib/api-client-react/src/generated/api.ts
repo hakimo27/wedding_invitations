@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -17,9 +17,11 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ActivityLog,
   AdminLoginBody,
   AdminLoginResponse,
   CreateGuestBody,
+  CreateTableBody,
   ErrorResponse,
   Guest,
   GuestStats,
@@ -28,6 +30,8 @@ import type {
   Settings,
   UpdateGuestBody,
   UpdateSettingsBody,
+  UpdateTableBody,
+  WeddingTable,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -872,6 +876,81 @@ export const useSubmitRsvp = <
 };
 
 /**
+ * @summary Get guest statistics
+ */
+export const getGetGuestStatsUrl = () => {
+  return `/api/guests/stats`;
+};
+
+export const getGuestStats = async (
+  options?: RequestInit,
+): Promise<GuestStats> => {
+  return customFetch<GuestStats>(getGetGuestStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGuestStatsQueryKey = () => {
+  return [`/api/guests/stats`] as const;
+};
+
+export const getGetGuestStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGuestStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGuestStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGuestStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGuestStats>>> = ({
+    signal,
+  }) => getGuestStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGuestStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGuestStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGuestStats>>
+>;
+export type GetGuestStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get guest statistics
+ */
+
+export function useGetGuestStats<
+  TData = Awaited<ReturnType<typeof getGuestStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGuestStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGuestStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get wedding settings
  */
 export const getGetSettingsUrl = () => {
@@ -1031,81 +1110,6 @@ export const useUpdateSettings = <
 };
 
 /**
- * @summary Get guest statistics
- */
-export const getGetGuestStatsUrl = () => {
-  return `/api/guests/stats`;
-};
-
-export const getGuestStats = async (
-  options?: RequestInit,
-): Promise<GuestStats> => {
-  return customFetch<GuestStats>(getGetGuestStatsUrl(), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetGuestStatsQueryKey = () => {
-  return [`/api/guests/stats`] as const;
-};
-
-export const getGetGuestStatsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getGuestStats>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getGuestStats>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetGuestStatsQueryKey();
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGuestStats>>> = ({
-    signal,
-  }) => getGuestStats({ signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getGuestStats>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetGuestStatsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getGuestStats>>
->;
-export type GetGuestStatsQueryError = ErrorType<unknown>;
-
-/**
- * @summary Get guest statistics
- */
-
-export function useGetGuestStats<
-  TData = Awaited<ReturnType<typeof getGuestStats>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getGuestStats>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetGuestStatsQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
  * @summary Admin login
  */
 export const getAdminLoginUrl = () => {
@@ -1190,3 +1194,410 @@ export const useAdminLogin = <
 > => {
   return useMutation(getAdminLoginMutationOptions(options));
 };
+
+/**
+ * @summary List all tables
+ */
+export const getListTablesUrl = () => {
+  return `/api/tables`;
+};
+
+export const listTables = async (
+  options?: RequestInit,
+): Promise<WeddingTable[]> => {
+  return customFetch<WeddingTable[]>(getListTablesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTablesQueryKey = () => {
+  return [`/api/tables`] as const;
+};
+
+export const getListTablesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTables>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTables>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTablesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listTables>>> = ({
+    signal,
+  }) => listTables({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTables>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTables>>
+>;
+export type ListTablesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all tables
+ */
+
+export function useListTables<
+  TData = Awaited<ReturnType<typeof listTables>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTables>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTablesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a table
+ */
+export const getCreateTableUrl = () => {
+  return `/api/tables`;
+};
+
+export const createTable = async (
+  createTableBody: CreateTableBody,
+  options?: RequestInit,
+): Promise<WeddingTable> => {
+  return customFetch<WeddingTable>(getCreateTableUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTableBody),
+  });
+};
+
+export const getCreateTableMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTable>>,
+    TError,
+    { data: BodyType<CreateTableBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createTable>>,
+  TError,
+  { data: BodyType<CreateTableBody> },
+  TContext
+> => {
+  const mutationKey = ["createTable"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createTable>>,
+    { data: BodyType<CreateTableBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createTable(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateTableMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createTable>>
+>;
+export type CreateTableMutationBody = BodyType<CreateTableBody>;
+export type CreateTableMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a table
+ */
+export const useCreateTable = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTable>>,
+    TError,
+    { data: BodyType<CreateTableBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createTable>>,
+  TError,
+  { data: BodyType<CreateTableBody> },
+  TContext
+> => {
+  return useMutation(getCreateTableMutationOptions(options));
+};
+
+/**
+ * @summary Update a table
+ */
+export const getUpdateTableUrl = (id: number) => {
+  return `/api/tables/${id}`;
+};
+
+export const updateTable = async (
+  id: number,
+  updateTableBody: UpdateTableBody,
+  options?: RequestInit,
+): Promise<WeddingTable> => {
+  return customFetch<WeddingTable>(getUpdateTableUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateTableBody),
+  });
+};
+
+export const getUpdateTableMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTable>>,
+    TError,
+    { id: number; data: BodyType<UpdateTableBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTable>>,
+  TError,
+  { id: number; data: BodyType<UpdateTableBody> },
+  TContext
+> => {
+  const mutationKey = ["updateTable"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTable>>,
+    { id: number; data: BodyType<UpdateTableBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateTable(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTableMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTable>>
+>;
+export type UpdateTableMutationBody = BodyType<UpdateTableBody>;
+export type UpdateTableMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update a table
+ */
+export const useUpdateTable = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTable>>,
+    TError,
+    { id: number; data: BodyType<UpdateTableBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTable>>,
+  TError,
+  { id: number; data: BodyType<UpdateTableBody> },
+  TContext
+> => {
+  return useMutation(getUpdateTableMutationOptions(options));
+};
+
+/**
+ * @summary Delete a table
+ */
+export const getDeleteTableUrl = (id: number) => {
+  return `/api/tables/${id}`;
+};
+
+export const deleteTable = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTableUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTableMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTable>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTable>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteTable"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTable>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteTable(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTableMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTable>>
+>;
+
+export type DeleteTableMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a table
+ */
+export const useDeleteTable = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTable>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTable>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteTableMutationOptions(options));
+};
+
+/**
+ * @summary Get recent activity log
+ */
+export const getListActivityUrl = () => {
+  return `/api/activity`;
+};
+
+export const listActivity = async (
+  options?: RequestInit,
+): Promise<ActivityLog[]> => {
+  return customFetch<ActivityLog[]>(getListActivityUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListActivityQueryKey = () => {
+  return [`/api/activity`] as const;
+};
+
+export const getListActivityQueryOptions = <
+  TData = Awaited<ReturnType<typeof listActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListActivityQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listActivity>>> = ({
+    signal,
+  }) => listActivity({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listActivity>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListActivityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listActivity>>
+>;
+export type ListActivityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent activity log
+ */
+
+export function useListActivity<
+  TData = Awaited<ReturnType<typeof listActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListActivityQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { UpdateGuestBodyRsvpStatus } from "./updateGuestBodyRsvpStatus";
 import type { UpdateGuestBodySalutationType } from "./updateGuestBodySalutationType";
@@ -17,4 +17,8 @@ export interface UpdateGuestBody {
   rsvpStatus?: UpdateGuestBodyRsvpStatus;
   /** @nullable */
   rsvpComment?: string | null;
+  /** @nullable */
+  tableId?: number | null;
+  /** @nullable */
+  seatNumber?: number | null;
 }

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, count } from "drizzle-orm";
-import { db, guestsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, guestsTable, activityLogsTable } from "@workspace/db";
 import {
   CreateGuestBody,
   UpdateGuestBody,
@@ -15,6 +15,19 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+async function logActivity(
+  guestId: number,
+  guestName: string,
+  eventType: string,
+  payload?: string
+) {
+  try {
+    await db.insert(activityLogsTable).values({ guestId, guestName, eventType, payload: payload ?? null });
+  } catch {
+    // non-critical, swallow
+  }
+}
 
 function generateSlug(firstName: string, lastName: string): string {
   const base = `${firstName}-${lastName}`
@@ -37,14 +50,20 @@ function generateSlug(firstName: string, lastName: string): string {
 
 router.get("/guests/stats", async (req, res): Promise<void> => {
   const guests = await db.select().from(guestsTable);
+  const attending = guests.filter((g) => g.rsvpStatus === "attending");
+  const notAttending = guests.filter((g) => g.rsvpStatus === "not_attending");
+  const pending = guests.filter((g) => g.rsvpStatus === "pending");
   const stats = {
     total: guests.length,
-    attending: guests.filter((g) => g.rsvpStatus === "attending").length,
-    notAttending: guests.filter((g) => g.rsvpStatus === "not_attending").length,
-    pending: guests.filter((g) => g.rsvpStatus === "pending").length,
+    attending: attending.length,
+    notAttending: notAttending.length,
+    pending: pending.length,
     gameCompleted: guests.filter((g) => g.gameCompleted).length,
     invitationOpened: guests.filter((g) => g.invitationOpened).length,
     totalPersons: guests.reduce((sum, g) => sum + g.guestsCount, 0),
+    attendingPersons: attending.reduce((sum, g) => sum + g.guestsCount, 0),
+    notAttendingPersons: notAttending.reduce((sum, g) => sum + g.guestsCount, 0),
+    pendingPersons: pending.reduce((sum, g) => sum + g.guestsCount, 0),
   };
   res.json(stats);
 });
@@ -131,6 +150,13 @@ router.patch("/guests/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Гость не найден" });
     return;
   }
+
+  if (parsed.data.rsvpStatus && parsed.data.rsvpStatus !== "pending") {
+    const guestName = `${guest.firstName} ${guest.lastName}`;
+    const eventType = parsed.data.rsvpStatus === "attending" ? "rsvp_yes" : "rsvp_no";
+    await logActivity(guest.id, guestName, eventType);
+  }
+
   res.json(guest);
 });
 
@@ -157,14 +183,17 @@ router.post("/guests/:id/open-invitation", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [existing] = await db.select().from(guestsTable).where(eq(guestsTable.id, params.data.id));
+  if (!existing) { res.status(404).json({ error: "Гость не найден" }); return; }
+
   const [guest] = await db
     .update(guestsTable)
     .set({ invitationOpened: true })
     .where(eq(guestsTable.id, params.data.id))
     .returning();
-  if (!guest) {
-    res.status(404).json({ error: "Гость не найден" });
-    return;
+
+  if (!existing.invitationOpened) {
+    await logActivity(guest.id, `${guest.firstName} ${guest.lastName}`, "invitation_opened");
   }
   res.json(guest);
 });
@@ -175,14 +204,17 @@ router.post("/guests/:id/complete-game", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [existing] = await db.select().from(guestsTable).where(eq(guestsTable.id, params.data.id));
+  if (!existing) { res.status(404).json({ error: "Гость не найден" }); return; }
+
   const [guest] = await db
     .update(guestsTable)
     .set({ gameCompleted: true })
     .where(eq(guestsTable.id, params.data.id))
     .returning();
-  if (!guest) {
-    res.status(404).json({ error: "Гость не найден" });
-    return;
+
+  if (!existing.gameCompleted) {
+    await logActivity(guest.id, `${guest.firstName} ${guest.lastName}`, "game_completed");
   }
   res.json(guest);
 });
@@ -210,6 +242,15 @@ router.post("/guests/:id/rsvp", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Гость не найден" });
     return;
   }
+
+  const eventType = parsed.data.rsvpStatus === "attending" ? "rsvp_yes" : "rsvp_no";
+  await logActivity(
+    guest.id,
+    `${guest.firstName} ${guest.lastName}`,
+    eventType,
+    parsed.data.rsvpComment ?? undefined
+  );
+
   res.json(guest);
 });
 

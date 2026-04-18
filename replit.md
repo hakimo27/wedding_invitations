@@ -31,19 +31,28 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 ### What it does
 A premium personalized wedding invitation web application where each guest receives a unique link. Features include:
 - Personalized invitation pages per guest (by URL slug)
-- 3D mini-game (Three.js) — guest collects hearts before seeing invitation
+- 2D Canvas mini-game (3 levels, 3 lives) — guest collects hearts/flowers/rings, avoids dark spiky items
 - Beautiful countdown timer to wedding date
 - OpenStreetMap venue map
-- RSVP form
-- Admin panel for managing guests and settings
+- RSVP form with comment
+- Admin panel: Dashboard, Guests, Tables, Settings tabs
+- Table seating system (CRUD) — assign guests to tables + seat numbers
+- Activity log — tracks when guests open invitation, complete game, submit RSVP
+- Enhanced stats: total/attending/not_attending/pending with person counts
 
 ### Architecture
 - **Frontend**: `artifacts/wedding/` — React + Vite + Tailwind + Framer Motion
 - **Backend**: `artifacts/api-server/` — Express 5 + Drizzle ORM + PostgreSQL
-- **DB Schema**: `lib/db/src/schema/guests.ts` + `lib/db/src/schema/settings.ts`
+- **DB Schema**: `lib/db/src/schema/` — guests, settings, tables, activity-logs
 - **API Spec**: `lib/api-spec/openapi.yaml`
 - **Generated Hooks**: `lib/api-client-react/src/generated/api.ts`
 - **Generated Zod Schemas**: `lib/api-zod/src/generated/api.ts`
+
+### DB Tables
+- `guests` — includes `tableId`, `seatNumber` (nullable FK to `wedding_tables`)
+- `settings` — global wedding config (single row)
+- `wedding_tables` — table seating (name, seatsCount, sortOrder, note)
+- `activity_logs` — event log (guestId, guestName, eventType, payload, createdAt)
 
 ### URL Routes
 - `/` — redirects to `/admin`

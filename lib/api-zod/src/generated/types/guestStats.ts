@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export interface GuestStats {
@@ -14,4 +14,7 @@ export interface GuestStats {
   gameCompleted: number;
   invitationOpened: number;
   totalPersons: number;
+  attendingPersons: number;
+  notAttendingPersons: number;
+  pendingPersons: number;
 }

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: Wedding Invitation API
 servers:
   - url: /api
@@ -15,6 +15,10 @@ tags:
     description: Wedding settings
   - name: rsvp
     description: RSVP operations
+  - name: tables
+    description: Table seating management
+  - name: activity
+    description: Activity log
 paths:
   /healthz:
     get:
@@ -234,6 +238,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /guests/stats:
+    get:
+      operationId: getGuestStats
+      tags: [guests]
+      summary: Get guest statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestStats"
+
   /settings:
     get:
       operationId: getSettings
@@ -264,19 +281,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Settings"
 
-  /guests/stats:
-    get:
-      operationId: getGuestStats
-      tags: [guests]
-      summary: Get guest statistics
-      responses:
-        "200":
-          description: Stats
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GuestStats"
-
   /admin/login:
     post:
       operationId: adminLogin
@@ -301,6 +305,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /tables:
+    get:
+      operationId: listTables
+      tags: [tables]
+      summary: List all tables
+      responses:
+        "200":
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeddingTable"
+    post:
+      operationId: createTable
+      tags: [tables]
+      summary: Create a table
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTableBody"
+      responses:
+        "201":
+          description: Created table
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeddingTable"
+
+  /tables/{id}:
+    patch:
+      operationId: updateTable
+      tags: [tables]
+      summary: Update a table
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTableBody"
+      responses:
+        "200":
+          description: Updated table
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeddingTable"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteTable
+      tags: [tables]
+      summary: Delete a table
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /activity:
+    get:
+      operationId: listActivity
+      tags: [activity]
+      summary: Get recent activity log
+      responses:
+        "200":
+          description: Activity log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityLog"
 
 components:
   schemas:
@@ -345,6 +446,10 @@ components:
           enum: [pending, attending, not_attending]
         rsvpComment:
           type: ["string", "null"]
+        tableId:
+          type: ["integer", "null"]
+        seatNumber:
+          type: ["integer", "null"]
         createdAt:
           type: string
           format: date-time
@@ -362,6 +467,8 @@ components:
         - gameCompleted
         - rsvpStatus
         - rsvpComment
+        - tableId
+        - seatNumber
         - createdAt
         - updatedAt
 
@@ -404,6 +511,10 @@ components:
           enum: [pending, attending, not_attending]
         rsvpComment:
           type: ["string", "null"]
+        tableId:
+          type: ["integer", "null"]
+        seatNumber:
+          type: ["integer", "null"]
 
     RsvpBody:
       type: object
@@ -529,6 +640,12 @@ components:
           type: integer
         totalPersons:
           type: integer
+        attendingPersons:
+          type: integer
+        notAttendingPersons:
+          type: integer
+        pendingPersons:
+          type: integer
       required:
         - total
         - attending
@@ -537,6 +654,89 @@ components:
         - gameCompleted
         - invitationOpened
         - totalPersons
+        - attendingPersons
+        - notAttendingPersons
+        - pendingPersons
+
+    WeddingTable:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        seatsCount:
+          type: integer
+        sortOrder:
+          type: integer
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - seatsCount
+        - sortOrder
+        - note
+        - createdAt
+        - updatedAt
+
+    CreateTableBody:
+      type: object
+      properties:
+        name:
+          type: string
+        seatsCount:
+          type: integer
+          default: 8
+        sortOrder:
+          type: integer
+          default: 0
+        note:
+          type: ["string", "null"]
+      required:
+        - name
+
+    UpdateTableBody:
+      type: object
+      properties:
+        name:
+          type: string
+        seatsCount:
+          type: integer
+        sortOrder:
+          type: integer
+        note:
+          type: ["string", "null"]
+
+    ActivityLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        guestId:
+          type: integer
+        guestName:
+          type: string
+        eventType:
+          type: string
+        payload:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - guestId
+        - guestName
+        - eventType
+        - payload
+        - createdAt
 
     AdminLoginBody:
       type: object

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wedding Invitation API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from "zod";
 
@@ -28,6 +28,8 @@ export const ListGuestsResponseItem = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -64,6 +66,8 @@ export const GetGuestResponse = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -83,6 +87,8 @@ export const UpdateGuestBody = zod.object({
   slug: zod.string().optional(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]).optional(),
   rsvpComment: zod.string().nullish(),
+  tableId: zod.number().nullish(),
+  seatNumber: zod.number().nullish(),
 });
 
 export const UpdateGuestResponse = zod.object({
@@ -96,6 +102,8 @@ export const UpdateGuestResponse = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -125,6 +133,8 @@ export const GetGuestBySlugResponse = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -147,6 +157,8 @@ export const MarkInvitationOpenedResponse = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -169,6 +181,8 @@ export const MarkGameCompletedResponse = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -196,8 +210,26 @@ export const SubmitRsvpResponse = zod.object({
   gameCompleted: zod.boolean(),
   rsvpStatus: zod.enum(["pending", "attending", "not_attending"]),
   rsvpComment: zod.string().nullable(),
+  tableId: zod.number().nullable(),
+  seatNumber: zod.number().nullable(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Get guest statistics
+ */
+export const GetGuestStatsResponse = zod.object({
+  total: zod.number(),
+  attending: zod.number(),
+  notAttending: zod.number(),
+  pending: zod.number(),
+  gameCompleted: zod.number(),
+  invitationOpened: zod.number(),
+  totalPersons: zod.number(),
+  attendingPersons: zod.number(),
+  notAttendingPersons: zod.number(),
+  pendingPersons: zod.number(),
 });
 
 /**
@@ -268,19 +300,6 @@ export const UpdateSettingsResponse = zod.object({
 });
 
 /**
- * @summary Get guest statistics
- */
-export const GetGuestStatsResponse = zod.object({
-  total: zod.number(),
-  attending: zod.number(),
-  notAttending: zod.number(),
-  pending: zod.number(),
-  gameCompleted: zod.number(),
-  invitationOpened: zod.number(),
-  totalPersons: zod.number(),
-});
-
-/**
  * @summary Admin login
  */
 export const AdminLoginBody = zod.object({
@@ -291,3 +310,74 @@ export const AdminLoginResponse = zod.object({
   success: zod.boolean(),
   token: zod.string(),
 });
+
+/**
+ * @summary List all tables
+ */
+export const ListTablesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  seatsCount: zod.number(),
+  sortOrder: zod.number(),
+  note: zod.string().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListTablesResponse = zod.array(ListTablesResponseItem);
+
+/**
+ * @summary Create a table
+ */
+export const createTableBodySeatsCountDefault = 8;
+export const createTableBodySortOrderDefault = 0;
+
+export const CreateTableBody = zod.object({
+  name: zod.string(),
+  seatsCount: zod.number().default(createTableBodySeatsCountDefault),
+  sortOrder: zod.number().default(createTableBodySortOrderDefault),
+  note: zod.string().nullish(),
+});
+
+/**
+ * @summary Update a table
+ */
+export const UpdateTableParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateTableBody = zod.object({
+  name: zod.string().optional(),
+  seatsCount: zod.number().optional(),
+  sortOrder: zod.number().optional(),
+  note: zod.string().nullish(),
+});
+
+export const UpdateTableResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  seatsCount: zod.number(),
+  sortOrder: zod.number(),
+  note: zod.string().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a table
+ */
+export const DeleteTableParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get recent activity log
+ */
+export const ListActivityResponseItem = zod.object({
+  id: zod.number(),
+  guestId: zod.number(),
+  guestName: zod.string(),
+  eventType: zod.string(),
+  payload: zod.string().nullable(),
+  createdAt: zod.coerce.date(),
+});
+export const ListActivityResponse = zod.array(ListActivityResponseItem);
